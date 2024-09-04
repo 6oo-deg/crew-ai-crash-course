@@ -1,62 +1,66 @@
-from crewai import Crew
+from crewai import Crew, Process
 from textwrap import dedent
-from agents import TravelAgents
-from tasks import TravelTasks
+from agents import FinancialAgents
+from tasks import ResearchTasks
 
+from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
+today = datetime.today().strftime('%Y-%m-%d')
 
-class TripCrew:
-    def __init__(self, origin, cities, date_range, interests):
-        self.origin = origin
-        self.cities = cities
-        self.date_range = date_range
-        self.interests = interests
+class FinancialCrew:
+    def __init__(self, date, symbol):
+        self.date = date
+        self.symbol = symbol
 
     def run(self):
         # Define your custom agents and tasks in agents.py and tasks.py
-        agents = TravelAgents()
-        tasks = TravelTasks()
+        agents = FinancialAgents()
+        tasks = ResearchTasks()
 
         # Define your custom agents and tasks here
-        expert_travel_agent = agents.expert_travel_agent()
-        city_selection_expert = agents.city_selection_expert()
-        local_tour_guide = agents.local_tour_guide()
+        head_equity_research = agents.head_equity_research()
+        financial_analyst = agents.financial_analyst(today)
+        equity_research_analyst = agents.equity_research_analyst(today)
+        economist = agents.economist(today)
+        writer = agents.financial_writer()
 
         # Custom tasks include agent name and variables as input
-        plan_itinerary = tasks.plan_itinerary(
-            expert_travel_agent,
-            self.cities,
-            self.date_range,
-            self.interests
+        gather_info_hist = tasks.gather_historical_financial_information(
+            financial_analyst,
+            self.symbol
         )
 
-        identify_city = tasks.identify_city(
-            city_selection_expert,
-            self.origin,
-            self.cities,
-            self.interests,
-            self.date_range
+        gather_info_curr = tasks.gather_current_financial_information(
+            equity_research_analyst,
+            self.symbol
         )
 
-        gather_city_info = tasks.gather_city_info(
-            local_tour_guide,
-            self.cities,
-            self.date_range,
-            self.interests
+        gather_info_econ = tasks.gather_economic_data(
+            economist,
+            self.symbol
         )
+
+        write_nl = tasks.write_newsletter(
+            writer,
+            [gather_info_hist, gather_info_curr, gather_info_econ]
+        )
+
 
         # Define your custom crew here
         crew = Crew(
-            agents=[expert_travel_agent,
-                    city_selection_expert,
-                    local_tour_guide
+            agents=[head_equity_research,
+                    financial_analyst,
+                    equity_research_analyst,
+                    economist,
+                    writer
                     ],
             tasks=[
-                plan_itinerary,
-                identify_city,
-                gather_city_info
+                gather_info_hist,
+                gather_info_curr,
+                gather_info_econ,
+                write_nl
             ],
             verbose=True,
         )
@@ -67,28 +71,16 @@ class TripCrew:
 
 # This is the main function that you will use to run your custom crew.
 if __name__ == "__main__":
-    print("## Welcome to Trip Planner Crew")
+    print("## Welcome to the Financial Crew AI Newsletter")
     print('-------------------------------')
-    origin = input(
+    symbol = input(
         dedent("""
-      From where will you be traveling from?
-    """))
-    cities = input(
-        dedent("""
-      What are the cities options you are interested in visiting?
-    """))
-    date_range = input(
-        dedent("""
-      What is the date range you are interested in traveling?
-    """))
-    interests = input(
-        dedent("""
-      What are some of your high level interests and hobbies?
+      Which company would you like to write about?
     """))
 
-    trip_crew = TripCrew(origin, cities, date_range, interests)
-    result = trip_crew.run()
+    fin_crew = FinancialCrew(today, symbol)
+    result = fin_crew.run()
     print("\n\n########################")
-    print("## Here is you Trip Plan")
+    print("## Here is your Newsletter")
     print("########################\n")
     print(result)
